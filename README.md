@@ -30,5 +30,5 @@ make bundle
 推送 `v*` 标签后，GitHub Actions 会自动构建 macOS（Apple Silicon 和 Intel）、Windows x64 以及 Linux x64 安装包，并创建 GitHub Release。
 
 ```bash
-make release VERSION=0.1.2
+make release VERSION=0.1.3
 ```

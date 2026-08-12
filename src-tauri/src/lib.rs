@@ -9,6 +9,17 @@ fn workspace_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         .map_err(|error| error.to_string())
 }
 
+fn write_workspace(path: &std::path::Path, contents: &str) -> Result<(), String> {
+    let directory = path
+        .parent()
+        .ok_or_else(|| "Cannot determine app data directory".to_string())?;
+    fs::create_dir_all(directory).map_err(|error| error.to_string())?;
+
+    let temporary_path = path.with_extension("json.tmp");
+    fs::write(&temporary_path, contents).map_err(|error| error.to_string())?;
+    fs::rename(temporary_path, path).map_err(|error| error.to_string())
+}
+
 #[tauri::command]
 fn load_workspace(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let path = workspace_path(&app)?;
@@ -23,14 +34,7 @@ fn load_workspace(app: tauri::AppHandle) -> Result<Option<String>, String> {
 #[tauri::command]
 fn save_workspace(app: tauri::AppHandle, contents: String) -> Result<(), String> {
     let path = workspace_path(&app)?;
-    let directory = path
-        .parent()
-        .ok_or_else(|| "Cannot determine app data directory".to_string())?;
-    fs::create_dir_all(directory).map_err(|error| error.to_string())?;
-
-    let temporary_path = path.with_extension("json.tmp");
-    fs::write(&temporary_path, contents).map_err(|error| error.to_string())?;
-    fs::rename(temporary_path, path).map_err(|error| error.to_string())
+    write_workspace(&path, &contents)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
