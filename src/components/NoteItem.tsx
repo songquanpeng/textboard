@@ -10,7 +10,7 @@ type Props = {
   onDelete: () => void;
 };
 
-const DELETE_REVEAL = 70;
+const DELETE_REVEAL = 62;
 
 export function NoteItem({ note, active, onSelect, onDelete }: Props) {
   const [offset, setOffset] = useState(0);
@@ -68,7 +68,6 @@ export function NoteItem({ note, active, onSelect, onDelete }: Props) {
         onClick={() => { setOffset(0); onDelete(); }}
       >
         <Trash2 size={16} />
-        <span>删除</span>
       </button>
       <button
         className={`note-item ${active ? "is-active" : ""} ${dragging ? "is-dragging" : ""}`}

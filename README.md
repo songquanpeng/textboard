@@ -9,6 +9,7 @@
 - 全文搜索、文稿置顶、深浅色模式和字数统计
 - 文稿向右滑动可快速删除
 - 编辑器使用等宽代码字体
+- 编辑器内可直接输入 `Tab` 制表符
 - 一键切换窗口始终置顶
 - `⌘/Ctrl + N` 新建文稿，`⌘/Ctrl + K` 搜索
 - 无账号、无云端依赖
@@ -33,5 +34,5 @@ make bundle
 推送 `v*` 标签后，GitHub Actions 会自动构建 macOS（Apple Silicon 和 Intel）、Windows x64 以及 Linux x64 安装包，并创建 GitHub Release。
 
 ```bash
-make release VERSION=0.1.4
+make release VERSION=0.1.5
 ```

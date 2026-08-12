@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Check,
@@ -135,6 +143,22 @@ export default function App() {
     }
     void getCurrentWindow().setAlwaysOnTop(next).then(() => setAlwaysOnTop(next));
   }, [alwaysOnTop]);
+
+  const handleEditorKeyDown = useCallback((event: ReactKeyboardEvent<HTMLTextAreaElement>, note: Note) => {
+    if (event.key !== "Tab") return;
+    event.preventDefault();
+
+    const editor = event.currentTarget;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const indentation = "\t";
+    const content = `${note.content.slice(0, start)}${indentation}${note.content.slice(end)}`;
+    updateNote(note.id, { content });
+
+    requestAnimationFrame(() => {
+      editor.selectionStart = editor.selectionEnd = start + indentation.length;
+    });
+  }, [updateNote]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -311,6 +335,7 @@ export default function App() {
               className="editor"
               value={activeNote.content}
               onChange={(event) => updateNote(activeNote.id, { content: event.target.value })}
+              onKeyDown={(event) => handleEditorKeyDown(event, activeNote)}
               placeholder="从这里开始…"
               spellCheck="false"
               autoFocus
