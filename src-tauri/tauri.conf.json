@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "片刻",
+  "version": "0.1.0",
+  "identifier": "com.song.moment",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "片刻",
+        "width": 980,
+        "height": 680,
+        "minWidth": 680,
+        "minHeight": 460,
+        "center": true,
+        "hiddenTitle": true,
+        "titleBarStyle": "Overlay",
+        "backgroundColor": "#f8f7f3"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "轻量的临时文字暂存工具",
+    "longDescription": "片刻是一个轻量、自动保存、按时间归类的桌面文字暂存工具。"
+  }
+}
