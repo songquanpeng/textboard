@@ -2,9 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as R
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Check,
-  ChevronDown,
   FileText,
-  Menu,
   Moon,
   MoreHorizontal,
   PanelLeftClose,
@@ -51,6 +49,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [alwaysOnTop, setAlwaysOnTop] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const loadedRef = useRef(false);
@@ -60,6 +59,11 @@ export default function App() {
       setWorkspace(saved?.version === 1 ? saved : initialWorkspace());
       loadedRef.current = true;
     });
+  }, []);
+
+  useEffect(() => {
+    if (!("__TAURI_INTERNALS__" in window)) return;
+    void getCurrentWindow().isAlwaysOnTop().then(setAlwaysOnTop);
   }, []);
 
   useEffect(() => {
@@ -92,29 +96,45 @@ export default function App() {
     setTimeout(() => editorRef.current?.focus(), 40);
   }, []);
 
-  const updateActiveNote = useCallback((patch: Partial<Note>) => {
+  const updateNote = useCallback((noteId: string, patch: Partial<Note>) => {
     setWorkspace((current) => {
-      if (!current?.activeNoteId) return current;
+      if (!current) return current;
       return {
         ...current,
         notes: current.notes.map((note) =>
-          note.id === current.activeNoteId ? { ...note, ...patch, updatedAt: Date.now() } : note,
+          note.id === noteId ? { ...note, ...patch, updatedAt: Date.now() } : note,
         ),
       };
     });
   }, []);
 
-  const deleteActiveNote = useCallback(() => {
+  const selectNote = useCallback((noteId: string) => {
+    setWorkspace((current) => current ? { ...current, activeNoteId: noteId } : current);
+    setTimeout(() => editorRef.current?.focus(), 20);
+  }, []);
+
+  const deleteNote = useCallback((noteId: string) => {
     setWorkspace((current) => {
-      if (!current?.activeNoteId) return current;
-      const index = current.notes.findIndex((note) => note.id === current.activeNoteId);
-      const notes = current.notes.filter((note) => note.id !== current.activeNoteId);
-      const next = notes[Math.min(Math.max(index, 0), notes.length - 1)] ?? null;
+      if (!current) return current;
+      const index = current.notes.findIndex((note) => note.id === noteId);
+      if (index < 0) return current;
+      const notes = current.notes.filter((note) => note.id !== noteId);
+      if (current.activeNoteId !== noteId) return { ...current, notes };
+      const next = notes[Math.min(index, notes.length - 1)] ?? null;
       return { ...current, notes, activeNoteId: next?.id ?? null };
     });
     setConfirmDelete(false);
     setMenuOpen(false);
   }, []);
+
+  const toggleAlwaysOnTop = useCallback(() => {
+    const next = !alwaysOnTop;
+    if (!("__TAURI_INTERNALS__" in window)) {
+      setAlwaysOnTop(next);
+      return;
+    }
+    void getCurrentWindow().setAlwaysOnTop(next).then(() => setAlwaysOnTop(next));
+  }, [alwaysOnTop]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -217,7 +237,8 @@ export default function App() {
                   key={note.id}
                   note={note}
                   active={note.id === workspace.activeNoteId}
-                  onSelect={() => { setWorkspace({ ...workspace, activeNoteId: note.id }); setTimeout(() => editorRef.current?.focus(), 20); }}
+                  onSelect={() => selectNote(note.id)}
+                  onDelete={() => deleteNote(note.id)}
                 />
               ))}
             </section>
@@ -233,7 +254,7 @@ export default function App() {
           <span>{workspace.notes.length} 篇文稿</span>
           <IconButton
             label={isDark ? "切换浅色模式" : "切换深色模式"}
-            onClick={() => setWorkspace({ ...workspace, theme: isDark ? "light" : "dark" })}
+            onClick={() => setWorkspace((current) => current ? { ...current, theme: isDark ? "light" : "dark" } : current)}
           >
             {isDark ? <Sun size={15} /> : <Moon size={15} />}
           </IconButton>
@@ -251,6 +272,14 @@ export default function App() {
             {activeNote ? <span className="document-date">{fullDate(activeNote.createdAt)}</span> : null}
           </div>
           <div className="toolbar__right">
+            <IconButton
+              label={alwaysOnTop ? "取消始终置顶" : "始终置顶"}
+              className={alwaysOnTop ? "is-active" : ""}
+              aria-pressed={alwaysOnTop}
+              onClick={toggleAlwaysOnTop}
+            >
+              <Pin size={16} />
+            </IconButton>
             <span className={`save-status save-status--${saveState}`}>
               {saveState === "saving" ? "正在保存…" : saveState === "error" ? "保存失败" : <><Check size={13} /> 已保存</>}
             </span>
@@ -261,7 +290,7 @@ export default function App() {
                 </IconButton>
                 {menuOpen ? (
                   <div className="popover-menu">
-                    <button onClick={() => { updateActiveNote({ pinned: !activeNote.pinned }); setMenuOpen(false); }}>
+                    <button onClick={() => { updateNote(activeNote.id, { pinned: !activeNote.pinned }); setMenuOpen(false); }}>
                       <Pin size={15} /> {activeNote.pinned ? "取消置顶" : "置顶文稿"}
                     </button>
                     <button className="danger" onClick={() => setConfirmDelete(true)}>
@@ -278,9 +307,10 @@ export default function App() {
           <main className="editor-wrap">
             <textarea
               ref={editorRef}
+              key={activeNote.id}
               className="editor"
               value={activeNote.content}
-              onChange={(event) => updateActiveNote({ content: event.target.value })}
+              onChange={(event) => updateNote(activeNote.id, { content: event.target.value })}
               placeholder="从这里开始…"
               spellCheck="false"
               autoFocus
@@ -301,7 +331,7 @@ export default function App() {
               <p>“{noteTitle(activeNote)}” 将从这台设备上移除，此操作无法撤销。</p>
               <div className="dialog-actions">
                 <button onClick={() => setConfirmDelete(false)}>取消</button>
-                <button className="danger-button" onClick={deleteActiveNote}>删除</button>
+                <button className="danger-button" onClick={() => deleteNote(activeNote.id)}>删除</button>
               </div>
             </div>
           </div>
