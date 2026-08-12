@@ -15,7 +15,14 @@ const DELETE_REVEAL = 62;
 export function NoteItem({ note, active, onSelect, onDelete }: Props) {
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const gesture = useRef({ pointerId: -1, startX: 0, startY: 0, startOffset: 0, moved: false });
+  const gesture = useRef({
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    startOffset: 0,
+    currentOffset: 0,
+    moved: false,
+  });
 
   const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
@@ -24,6 +31,7 @@ export function NoteItem({ note, active, onSelect, onDelete }: Props) {
       startX: event.clientX,
       startY: event.clientY,
       startOffset: offset,
+      currentOffset: offset,
       moved: false,
     };
     setDragging(true);
@@ -36,12 +44,14 @@ export function NoteItem({ note, active, onSelect, onDelete }: Props) {
     const deltaY = event.clientY - gesture.current.startY;
     if (Math.abs(deltaY) > Math.abs(deltaX) && !gesture.current.moved) return;
     if (Math.abs(deltaX) > 5) gesture.current.moved = true;
-    setOffset(Math.max(0, Math.min(DELETE_REVEAL, gesture.current.startOffset + deltaX)));
+    const nextOffset = Math.max(0, Math.min(DELETE_REVEAL, gesture.current.startOffset + deltaX));
+    gesture.current.currentOffset = nextOffset;
+    setOffset(nextOffset);
   };
 
   const finishGesture = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (gesture.current.pointerId !== event.pointerId) return;
-    const shouldReveal = offset > DELETE_REVEAL / 2;
+    const shouldReveal = gesture.current.currentOffset > DELETE_REVEAL / 2;
     setOffset(shouldReveal ? DELETE_REVEAL : 0);
     setDragging(false);
     gesture.current.pointerId = -1;
@@ -60,18 +70,24 @@ export function NoteItem({ note, active, onSelect, onDelete }: Props) {
   };
 
   return (
-    <div className="note-item-shell">
+    <div
+      className={`note-item-shell ${dragging ? "is-dragging" : ""} ${offset > 0 ? "has-offset" : ""}`}
+    >
       <button
         className="note-item-delete"
         aria-label={`删除 ${noteTitle(note)}`}
+        aria-hidden={offset === 0}
         tabIndex={offset > 0 ? 0 : -1}
-        onClick={() => { setOffset(0); onDelete(); }}
+        style={{ width: `${offset}px` }}
+        onClick={() => {
+          setOffset(0);
+          onDelete();
+        }}
       >
         <Trash2 size={16} />
       </button>
       <button
-        className={`note-item ${active ? "is-active" : ""} ${dragging ? "is-dragging" : ""}`}
-        style={{ transform: `translateX(${offset}px)` }}
+        className={`note-item ${active ? "is-active" : ""}`}
         onClick={handleClick}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

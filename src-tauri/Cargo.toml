@@ -1,6 +1,6 @@
 [package]
 name = "simple-textboard"
-version = "0.1.5"
+version = "0.1.6"
 description = "A lightweight scratchpad for fleeting text"
 authors = ["you"]
 edition = "2021"
