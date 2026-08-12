@@ -5,7 +5,7 @@ SHELL := /bin/sh
 .PHONY: help install dev check build bundle clean release
 
 help: ## 显示可用命令
-	@awk 'BEGIN {FS = ":.*## "; printf "片刻 / Textboard\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "; printf "Textboard\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 install: ## 安装前端依赖
 	npm ci

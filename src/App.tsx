@@ -31,7 +31,7 @@ function newNote(content = ""): Note {
 }
 
 function initialWorkspace(): Workspace {
-  const note = newNote("欢迎来到片刻\n\n这里适合放下一些还没想好归宿的文字。\n\n不用保存，输入的内容会自动留在这台设备上。按 ⌘N 新建文稿，⌘K 搜索。");
+  const note = newNote("欢迎来到 Textboard\n\n这里适合放下一些还没想好归宿的文字。\n\n不用保存，输入的内容会自动留在这台设备上。按 ⌘N 新建文稿，⌘K 搜索。");
   return { version: 1, notes: [note], activeNoteId: note.id, theme: "system" };
 }
 
@@ -174,7 +174,7 @@ export default function App() {
         <div className="sidebar__header" onMouseDown={startWindowDrag}>
           <div className="brand">
             <span className="brand__mark"><FileText size={14} /></span>
-            <span>片刻</span>
+            <span>Textboard</span>
           </div>
           <IconButton label="收起侧边栏" onClick={() => setSidebarOpen(false)}>
             <PanelLeftClose size={17} />

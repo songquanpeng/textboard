@@ -1,4 +1,4 @@
-# 片刻（Textboard）
+# Textboard
 
 一个基于 Tauri 的轻量文字暂存工具：按时间归类文稿、自动保存、重启恢复。
 
@@ -30,5 +30,5 @@ make bundle
 推送 `v*` 标签后，GitHub Actions 会自动构建 macOS（Apple Silicon 和 Intel）、Windows x64 以及 Linux x64 安装包，并创建 GitHub Release。
 
 ```bash
-make release VERSION=0.1.1
+make release VERSION=0.1.2
 ```

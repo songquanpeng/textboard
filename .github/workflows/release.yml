@@ -72,7 +72,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 片刻 ${{ github.ref_name }}
+          releaseName: Textboard ${{ github.ref_name }}
           releaseBody: 下载与你的系统对应的安装包。macOS 构建未经过 Apple 公证，首次打开时可能需要在“隐私与安全性”中确认。
           generateReleaseNotes: true
           releaseDraft: false
