@@ -240,11 +240,19 @@ private struct NoteEditorView: View {
             Text(note.title)
               .font(.headline)
               .lineLimit(1)
+              .truncationMode(.middle)
+              .allowsTightening(true)
             Text(NoteMetrics.detailDate(for: note.updatedAt))
               .font(.caption2)
               .foregroundStyle(.secondary)
               .monospacedDigit()
+              .lineLimit(1)
+              .allowsTightening(true)
+              .minimumScaleFactor(0.85)
           }
+          .frame(minWidth: 150, idealWidth: 180, maxWidth: 220)
+          .padding(.horizontal, 4)
+          .clipped()
           .accessibilityElement(children: .combine)
         }
         ToolbarItemGroup(placement: .primaryAction) {

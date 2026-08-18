@@ -38,7 +38,7 @@ make bundle
 推送 `v*` 标签后，GitHub Actions 会测试并构建同时支持 Apple Silicon 与 Intel 的通用 macOS App，然后创建 GitHub Release。
 
 ```bash
-make release VERSION=0.3.0
+make release VERSION=0.3.1
 ```
 
 发布包使用 ad-hoc 签名，未经过 Apple Developer ID 公证；首次打开时 macOS 可能要求在“隐私与安全性”中确认。
