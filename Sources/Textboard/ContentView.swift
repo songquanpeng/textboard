@@ -58,7 +58,9 @@ struct ContentView: View {
   private func delete(_ note: Note) {
     guard let removed = store.delete(note.id) else { return }
     undoManager?.registerUndo(withTarget: store) { target in
-      target.restore(removed)
+      MainActor.assumeIsolated {
+        target.restore(removed)
+      }
     }
     undoManager?.setActionName("删除文稿")
     deletionCandidate = nil
