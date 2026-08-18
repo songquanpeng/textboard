@@ -16,8 +16,12 @@ struct ContentView: View {
 
   var body: some View {
     NavigationSplitView {
-      SidebarView(store: store, deletionCandidate: $deletionCandidate)
-        .navigationSplitViewColumnWidth(min: 220, ideal: 270, max: 340)
+      SidebarView(
+        store: store,
+        deletionCandidate: $deletionCandidate,
+        onSwipeDelete: deleteImmediately
+      )
+      .navigationSplitViewColumnWidth(min: 220, ideal: 270, max: 340)
     } detail: {
       editor
     }
@@ -56,6 +60,11 @@ struct ContentView: View {
   }
 
   private func delete(_ note: Note) {
+    deleteImmediately(note)
+    deletionCandidate = nil
+  }
+
+  private func deleteImmediately(_ note: Note) {
     guard let removed = store.delete(note.id) else { return }
     undoManager?.registerUndo(withTarget: store) { target in
       MainActor.assumeIsolated {
@@ -63,13 +72,13 @@ struct ContentView: View {
       }
     }
     undoManager?.setActionName("删除文稿")
-    deletionCandidate = nil
   }
 }
 
 private struct SidebarView: View {
   @ObservedObject var store: WorkspaceStore
   @Binding var deletionCandidate: Note?
+  let onSwipeDelete: (Note) -> Void
 
   var body: some View {
     VStack(spacing: 0) {
@@ -102,7 +111,8 @@ private struct SidebarView: View {
                   isSelected: store.workspace.activeNoteId == note.id,
                   onSelect: { store.select(note.id) },
                   onTogglePin: { store.togglePin(note.id) },
-                  onDelete: { deletionCandidate = note }
+                  onDeleteRequest: { deletionCandidate = note },
+                  onSwipeDelete: { onSwipeDelete(note) }
                 )
               }
             }
@@ -127,7 +137,8 @@ private struct NoteRowButton: View {
   let isSelected: Bool
   let onSelect: () -> Void
   let onTogglePin: () -> Void
-  let onDelete: () -> Void
+  let onDeleteRequest: () -> Void
+  let onSwipeDelete: () -> Void
   @Environment(\.colorScheme) private var colorScheme
   @State private var isHovering = false
 
@@ -148,10 +159,18 @@ private struct NoteRowButton: View {
     .contextMenu {
       Button(note.isPinned ? "取消置顶" : "置顶文稿", systemImage: "pin", action: onTogglePin)
       Divider()
-      Button("删除文稿", systemImage: "trash", role: .destructive, action: onDelete)
+      Button("删除文稿", systemImage: "trash", role: .destructive, action: onDeleteRequest)
     }
-    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-      Button("删除", systemImage: "trash", role: .destructive, action: onDelete)
+    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+      Button(
+        note.isPinned ? "取消置顶" : "置顶",
+        systemImage: note.isPinned ? "pin.slash" : "pin.fill",
+        action: onTogglePin
+      )
+      .tint(.orange)
+    }
+    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+      Button("删除", systemImage: "trash", role: .destructive, action: onSwipeDelete)
     }
   }
 

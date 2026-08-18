@@ -148,13 +148,12 @@ enum NoteMetrics {
     if calendar.isDate(date, inSameDayAs: now) {
       return formatted(date, template: "jm", locale: locale)
     }
-    if calendar.isDateInYesterday(date) {
-      return "昨天"
-    }
-
     let noteDay = calendar.startOfDay(for: date)
     let today = calendar.startOfDay(for: now)
     let days = calendar.dateComponents([.day], from: noteDay, to: today).day ?? 0
+    if days == 1 {
+      return "昨天"
+    }
     if days < 7 {
       return formatted(date, template: "EEE", locale: locale)
     }

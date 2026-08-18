@@ -28,7 +28,7 @@ jobs:
         with:
           name: Textboard ${{ github.ref_name }}
           body: |
-            Textboard 已使用 SwiftUI 与 AppKit 完整重写为原生 macOS App。
+            Textboard 是使用 SwiftUI 与 AppKit 构建的原生 macOS App。
 
             下载通用版本即可在 Apple Silicon 或 Intel Mac 上运行。发布包尚未经过 Apple Developer ID 公证，首次打开时可能需要在“隐私与安全性”中确认。
           generate_release_notes: true

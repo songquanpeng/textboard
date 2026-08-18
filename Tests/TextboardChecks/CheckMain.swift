@@ -122,6 +122,12 @@ struct TextboardChecks {
     try expect(reloaded.workspace.notes.count == initialCount + 2, "保存后数量错误")
     try expect(reloaded.activeNote?.content == "更新后的内容", "保存后内容错误")
 
+    let updatedAtBeforePinning = try require(reloaded.activeNote?.updatedAt, "置顶前应有编辑时间")
+    reloaded.togglePin(second)
+    try expect(reloaded.activeNote?.isPinned == true, "置顶状态错误")
+    try expect(reloaded.activeNote?.updatedAt == updatedAtBeforePinning, "置顶不应修改编辑时间")
+    reloaded.togglePin(second)
+
     let removed = try require(reloaded.delete(second), "删除应返回文稿")
     try expect(reloaded.workspace.activeNoteId != second, "删除后仍选中旧文稿")
     reloaded.restore(removed)

@@ -107,7 +107,6 @@ final class WorkspaceStore: ObservableObject {
   func togglePin(_ id: UUID) {
     guard let index = workspace.notes.firstIndex(where: { $0.id == id }) else { return }
     workspace.notes[index].isPinned.toggle()
-    workspace.notes[index].updatedAt = .now
     scheduleSave()
   }
 
