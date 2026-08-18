@@ -10,72 +10,26 @@ permissions:
 
 jobs:
   publish:
-    name: Build ${{ matrix.name }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macOS Apple Silicon
-            platform: macos-latest
-            target: aarch64-apple-darwin
-            args: --target aarch64-apple-darwin
-          - name: macOS Intel
-            platform: macos-latest
-            target: x86_64-apple-darwin
-            args: --target x86_64-apple-darwin
-          - name: Linux x64
-            platform: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            args: --bundles deb,rpm
-          - name: Windows x64
-            platform: windows-latest
-            target: x86_64-pc-windows-msvc
-            args: --bundles nsis
-
-    runs-on: ${{ matrix.platform }}
-    env:
-      NODE_USE_SYSTEM_CA: "1"
+    name: Build universal macOS release
+    runs-on: macos-15
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf rpm
+      - name: Verify version tag
+        run: test "${GITHUB_REF_NAME#v}" = "$(tr -d '[:space:]' < VERSION)"
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
+      - name: Test and package universal app
+        run: make archive
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
         with:
-          node-version: 22
-          cache: npm
+          name: Textboard ${{ github.ref_name }}
+          body: |
+            Textboard 已使用 SwiftUI 与 AppKit 完整重写为原生 macOS App。
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-          key: ${{ matrix.target }}
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Build and publish release
-        uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Textboard ${{ github.ref_name }}
-          releaseBody: 下载与你的系统对应的安装包。macOS 构建未经过 Apple 公证，首次打开时可能需要在“隐私与安全性”中确认。
-          generateReleaseNotes: true
-          releaseDraft: false
-          prerelease: false
-          retryAttempts: 2
-          args: ${{ matrix.args }}
+            下载通用版本即可在 Apple Silicon 或 Intel Mac 上运行。发布包尚未经过 Apple Developer ID 公证，首次打开时可能需要在“隐私与安全性”中确认。
+          generate_release_notes: true
+          files: build/Textboard-*-macos-universal.zip

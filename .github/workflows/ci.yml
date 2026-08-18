@@ -12,36 +12,15 @@ concurrency:
 
 jobs:
   check:
-    name: Check
-    runs-on: ubuntu-22.04
+    name: Native macOS checks
+    runs-on: macos-15
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Check project
+      - name: Test and build
         run: make check
+
+      - name: Build app bundle
+        run: make bundle
