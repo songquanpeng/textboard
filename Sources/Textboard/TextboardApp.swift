@@ -15,9 +15,9 @@ struct TextboardApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView(store: store)
-        .frame(minWidth: 680, minHeight: 460)
+        .frame(minWidth: 760, minHeight: 500)
     }
-    .defaultSize(width: 980, height: 680)
+    .defaultSize(width: 1_060, height: 720)
     .commands {
       TextboardCommands(store: store)
     }

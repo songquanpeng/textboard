@@ -138,4 +138,49 @@ enum NoteMetrics {
     let words = content.matches(of: /[\p{Han}]|[\p{L}\p{N}_'-]+/).count
     return (characters, words)
   }
+
+  static func sidebarDate(
+    for date: Date,
+    now: Date = .now,
+    calendar: Calendar = .current,
+    locale: Locale = .current
+  ) -> String {
+    if calendar.isDate(date, inSameDayAs: now) {
+      return formatted(date, template: "jm", locale: locale)
+    }
+    if calendar.isDateInYesterday(date) {
+      return "昨天"
+    }
+
+    let noteDay = calendar.startOfDay(for: date)
+    let today = calendar.startOfDay(for: now)
+    let days = calendar.dateComponents([.day], from: noteDay, to: today).day ?? 0
+    if days < 7 {
+      return formatted(date, template: "EEE", locale: locale)
+    }
+    if calendar.component(.year, from: date) == calendar.component(.year, from: now) {
+      return formatted(date, template: "MMMd", locale: locale)
+    }
+    return formatted(date, template: "yMMMd", locale: locale)
+  }
+
+  static func detailDate(
+    for date: Date,
+    now: Date = .now,
+    calendar: Calendar = .current,
+    locale: Locale = .current
+  ) -> String {
+    let template =
+      calendar.component(.year, from: date) == calendar.component(.year, from: now)
+      ? "MMMdjm"
+      : "yMMMdjm"
+    return formatted(date, template: template, locale: locale)
+  }
+
+  private static func formatted(_ date: Date, template: String, locale: Locale) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = locale
+    formatter.setLocalizedDateFormatFromTemplate(template)
+    return formatter.string(from: date)
+  }
 }

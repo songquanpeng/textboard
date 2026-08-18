@@ -2,12 +2,21 @@ import AppKit
 import SwiftUI
 
 private final class TabTextView: NSTextView {
+  private let minimumHorizontalInset: CGFloat = 42
+  private let preferredLineWidth: CGFloat = 720
+
   override func keyDown(with event: NSEvent) {
     if event.keyCode == 48, event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty {
       insertText("\t", replacementRange: selectedRange())
       return
     }
     super.keyDown(with: event)
+  }
+
+  override func setFrameSize(_ newSize: NSSize) {
+    super.setFrameSize(newSize)
+    let horizontalInset = max(minimumHorizontalInset, (newSize.width - preferredLineWidth) / 2)
+    textContainerInset = NSSize(width: horizontalInset, height: 38)
   }
 }
 
@@ -22,7 +31,8 @@ struct NativeTextEditor: NSViewRepresentable {
     let scrollView = NSScrollView()
     scrollView.hasVerticalScroller = true
     scrollView.autohidesScrollers = true
-    scrollView.drawsBackground = false
+    scrollView.drawsBackground = true
+    scrollView.backgroundColor = .textBackgroundColor
     scrollView.borderType = .noBorder
 
     let textView = TabTextView()
@@ -33,9 +43,11 @@ struct NativeTextEditor: NSViewRepresentable {
     textView.isAutomaticDashSubstitutionEnabled = false
     textView.isAutomaticTextReplacementEnabled = false
     textView.isContinuousSpellCheckingEnabled = false
-    textView.drawsBackground = false
-    textView.font = .monospacedSystemFont(ofSize: 15, weight: .regular)
-    textView.textContainerInset = NSSize(width: 34, height: 30)
+    textView.drawsBackground = true
+    textView.backgroundColor = .textBackgroundColor
+    textView.textColor = .textColor
+    textView.font = .monospacedSystemFont(ofSize: 14.5, weight: .regular)
+    textView.textContainerInset = NSSize(width: 42, height: 38)
     textView.textContainer?.widthTracksTextView = true
     textView.textContainer?.lineFragmentPadding = 0
     textView.isVerticallyResizable = true
@@ -45,7 +57,7 @@ struct NativeTextEditor: NSViewRepresentable {
     textView.setAccessibilityLabel("文稿内容")
 
     let paragraph = NSMutableParagraphStyle()
-    paragraph.lineSpacing = 4
+    paragraph.lineSpacing = 5
     textView.defaultParagraphStyle = paragraph
     textView.typingAttributes[.paragraphStyle] = paragraph
 

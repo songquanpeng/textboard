@@ -78,6 +78,20 @@ struct TextboardChecks {
       NoteMetrics.group(for: note(daysAgo: 30, pinned: true), now: now, calendar: calendar)
         == .pinned, "置顶分组错误")
 
+    let locale = Locale(identifier: "zh_CN")
+    let todayLabel = NoteMetrics.sidebarDate(
+      for: note(daysAgo: 0).updatedAt, now: now, calendar: calendar, locale: locale)
+    let yesterdayLabel = NoteMetrics.sidebarDate(
+      for: note(daysAgo: 1).updatedAt, now: now, calendar: calendar, locale: locale)
+    let weekdayLabel = NoteMetrics.sidebarDate(
+      for: note(daysAgo: 6).updatedAt, now: now, calendar: calendar, locale: locale)
+    let detailLabel = NoteMetrics.detailDate(
+      for: note(daysAgo: 0).updatedAt, now: now, calendar: calendar, locale: locale)
+    try expect(!todayLabel.isEmpty, "今天的列表时间不能为空")
+    try expect(yesterdayLabel == "昨天", "昨天的列表时间错误")
+    try expect(!weekdayLabel.isEmpty && weekdayLabel != todayLabel, "七天内的列表时间错误")
+    try expect(!detailLabel.isEmpty && detailLabel.contains(":"), "编辑器日期格式错误")
+
     let counts = NoteMetrics.counts(in: "你好 Swift 6\ntext_board")
     try expect(counts.characters == 18, "字符统计错误")
     try expect(counts.words == 5, "字词统计错误")

@@ -70,32 +70,26 @@ struct ContentView: View {
 private struct SidebarView: View {
   @ObservedObject var store: WorkspaceStore
   @Binding var deletionCandidate: Note?
-  @FocusState private var searchFocused: Bool
 
   var body: some View {
     VStack(spacing: 0) {
-      HStack(spacing: 8) {
-        Image(systemName: "magnifyingglass")
+      HStack(alignment: .firstTextBaseline, spacing: 8) {
+        Text("文稿")
+          .font(.title2.weight(.semibold))
+        Text("\(store.workspace.notes.count)")
+          .font(.subheadline)
           .foregroundStyle(.secondary)
-        TextField("搜索所有文稿", text: $store.query)
-          .textFieldStyle(.plain)
-          .focused($searchFocused)
-        if !store.query.isEmpty {
-          Button {
-            store.query = ""
-          } label: {
-            Image(systemName: "xmark.circle.fill")
-              .foregroundStyle(.tertiary)
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel("清除搜索")
-        }
+          .monospacedDigit()
+        Spacer()
       }
-      .padding(.horizontal, 10)
-      .frame(height: 30)
-      .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: 7))
-      .padding(.horizontal, 10)
-      .padding(.vertical, 8)
+      .padding(.horizontal, 14)
+      .padding(.top, 10)
+      .padding(.bottom, 8)
+
+      NativeSearchField(text: $store.query, focusRequest: store.searchRequest)
+        .frame(height: 28)
+        .padding(.horizontal, 10)
+        .padding(.bottom, 9)
 
       List {
         ForEach(DateGroup.allCases) { group in
@@ -103,77 +97,83 @@ private struct SidebarView: View {
           if !notes.isEmpty {
             Section(group.title) {
               ForEach(notes) { note in
-                Button {
-                  store.select(note.id)
-                } label: {
-                  NoteRow(note: note)
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(
-                  store.workspace.activeNoteId == note.id
-                    ? Color.accentColor.opacity(0.16)
-                    : Color.clear
+                NoteRowButton(
+                  note: note,
+                  isSelected: store.workspace.activeNoteId == note.id,
+                  onSelect: { store.select(note.id) },
+                  onTogglePin: { store.togglePin(note.id) },
+                  onDelete: { deletionCandidate = note }
                 )
-                .contextMenu {
-                  Button(note.isPinned ? "取消置顶" : "置顶文稿", systemImage: "pin") {
-                    store.togglePin(note.id)
-                  }
-                  Divider()
-                  Button("删除文稿", systemImage: "trash", role: .destructive) {
-                    deletionCandidate = note
-                  }
-                }
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                  Button("删除", systemImage: "trash", role: .destructive) {
-                    deletionCandidate = note
-                  }
-                }
               }
             }
           }
         }
       }
       .listStyle(.sidebar)
+      .scrollContentBackground(.hidden)
       .overlay {
         if store.filteredNotes.isEmpty {
           ContentUnavailableView.search(text: store.query)
         }
       }
-
-      Divider()
-      HStack {
-        Text("\(store.workspace.notes.count) 篇文稿")
-          .foregroundStyle(.secondary)
-        Spacer()
-        Button {
-          store.createNote()
-        } label: {
-          Image(systemName: "square.and.pencil")
-        }
-        .buttonStyle(.borderless)
-        .help("新建文稿 (⌘N)")
-        .accessibilityLabel("新建文稿")
-      }
-      .font(.caption)
-      .padding(.horizontal, 12)
-      .frame(height: 35)
     }
     .navigationTitle("Textboard")
-    .onChange(of: store.searchRequest) {
-      searchFocused = true
+  }
+
+}
+
+private struct NoteRowButton: View {
+  let note: Note
+  let isSelected: Bool
+  let onSelect: () -> Void
+  let onTogglePin: () -> Void
+  let onDelete: () -> Void
+  @Environment(\.colorScheme) private var colorScheme
+  @State private var isHovering = false
+
+  var body: some View {
+    Button(action: onSelect) {
+      NoteRow(note: note)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(rowBackground, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+    }
+    .buttonStyle(.plain)
+    .listRowInsets(EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6))
+    .listRowSeparator(.hidden)
+    .listRowBackground(Color.clear)
+    .onHover { isHovering = $0 }
+    .contextMenu {
+      Button(note.isPinned ? "取消置顶" : "置顶文稿", systemImage: "pin", action: onTogglePin)
+      Divider()
+      Button("删除文稿", systemImage: "trash", role: .destructive, action: onDelete)
+    }
+    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+      Button("删除", systemImage: "trash", role: .destructive, action: onDelete)
     }
   }
 
+  private var rowBackground: Color {
+    if isSelected {
+      return Color.accentColor.opacity(colorScheme == .dark ? 0.30 : 0.17)
+    }
+    if isHovering {
+      return Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05)
+    }
+    return .clear
+  }
 }
 
 private struct NoteRow: View {
   let note: Note
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
+    VStack(alignment: .leading, spacing: 5) {
       HStack(spacing: 5) {
         Text(note.title)
-          .font(.body.weight(.medium))
+          .font(.system(size: 13, weight: .semibold))
           .lineLimit(1)
         Spacer(minLength: 4)
         if note.isPinned {
@@ -183,15 +183,15 @@ private struct NoteRow: View {
         }
       }
       HStack(spacing: 6) {
-        Text(note.updatedAt, style: .relative)
+        Text(NoteMetrics.sidebarDate(for: note.updatedAt))
           .foregroundStyle(.secondary)
+          .monospacedDigit()
         Text(note.preview)
           .foregroundStyle(.tertiary)
           .lineLimit(1)
       }
-      .font(.caption)
+      .font(.system(size: 11))
     }
-    .padding(.vertical, 3)
     .accessibilityElement(children: .combine)
   }
 }
@@ -213,20 +213,35 @@ private struct NoteEditorView: View {
       .safeAreaInset(edge: .bottom, spacing: 0) {
         footer
       }
-      .navigationTitle(note.title)
+      .background(Color(nsColor: .textBackgroundColor))
+      .navigationTitle("")
       .toolbar {
-        ToolbarItem(placement: .navigation) {
-          Text(note.createdAt.formatted(date: .long, time: .shortened))
-            .font(.caption)
-            .foregroundStyle(.secondary)
+        ToolbarItem(placement: .principal) {
+          VStack(spacing: 1) {
+            Text(note.title)
+              .font(.headline)
+              .lineLimit(1)
+            Text(NoteMetrics.detailDate(for: note.updatedAt))
+              .font(.caption2)
+              .foregroundStyle(.secondary)
+              .monospacedDigit()
+          }
+          .accessibilityElement(children: .combine)
         }
         ToolbarItemGroup(placement: .primaryAction) {
+          Button {
+            store.createNote()
+          } label: {
+            Label("新建文稿", systemImage: "square.and.pencil")
+          }
+          .help("新建文稿 (⌘N)")
+
           Button {
             store.isAlwaysOnTop.toggle()
           } label: {
             Label(
               store.isAlwaysOnTop ? "取消始终置顶" : "始终置顶",
-              systemImage: store.isAlwaysOnTop ? "pin.fill" : "pin"
+              systemImage: "macwindow.on.rectangle"
             )
           }
           .help(store.isAlwaysOnTop ? "取消始终置顶" : "始终置顶")
@@ -240,7 +255,7 @@ private struct NoteEditorView: View {
               deletionCandidate = note
             }
           } label: {
-            Label("更多", systemImage: "ellipsis.circle")
+            Label("更多", systemImage: "ellipsis")
           }
         }
       }
@@ -257,19 +272,26 @@ private struct NoteEditorView: View {
       Text("\(counts.words) 字词")
     }
     .font(.caption)
-    .foregroundStyle(.secondary)
-    .padding(.horizontal, 16)
-    .frame(height: 30)
-    .background(.bar)
+    .foregroundStyle(.tertiary)
+    .padding(.horizontal, 14)
+    .frame(height: 27)
+    .background(.ultraThinMaterial)
+    .overlay(alignment: .top) {
+      Divider()
+    }
   }
 
   @ViewBuilder
   private var saveStatus: some View {
     switch store.saveState {
     case .idle, .saved:
-      Label("已保存", systemImage: "checkmark")
+      Label("已保存", systemImage: "checkmark.circle.fill")
     case .saving:
-      Text("正在保存…")
+      HStack(spacing: 5) {
+        ProgressView()
+          .controlSize(.mini)
+        Text("正在保存…")
+      }
     case .failed:
       Label("保存失败", systemImage: "exclamationmark.triangle")
         .foregroundStyle(.red)

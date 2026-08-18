@@ -142,6 +142,8 @@ final class WorkspaceStore: ObservableObject {
 
   func attach(window: NSWindow) {
     self.window = window
+    window.title = activeNote?.title ?? "Textboard"
+    window.titleVisibility = .hidden
     window.level = isAlwaysOnTop ? .floating : .normal
   }
 
