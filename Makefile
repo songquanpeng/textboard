@@ -2,40 +2,33 @@ SHELL := /bin/sh
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install dev test check build bundle archive clean release
+.PHONY: help install dev check build bundle clean release
 
 help: ## 显示可用命令
-	@awk 'BEGIN {FS = ":.*## "; printf "Textboard (native macOS)\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "; printf "Textboard\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-install: ## 检查 Swift 工具链（无第三方依赖）
-	@swift --version
+install: ## 安装前端依赖
+	npm ci
 
-dev: ## 运行原生 macOS 应用
-	swift run Textboard
+dev: ## 启动 Tauri 开发模式
+	npm run tauri:dev
 
-test: ## 运行模型、迁移和持久化检查
-	./scripts/test.sh
+check: ## 执行前端、Rust 格式及编译检查
+	npm run build
+	cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+	cargo check --manifest-path src-tauri/Cargo.toml
 
-check: test ## 编译 debug 与 release 配置
-	swift format lint --recursive --strict Sources Tests Package.swift
-	swift build
-	swift build -c release
+build: ## 生成 Apple Silicon release 二进制
+	npm run tauri:build -- --target aarch64-apple-darwin --no-bundle
 
-build: ## 生成 release 可执行文件
-	swift build -c release
-
-bundle: check ## 生成当前架构的 Textboard.app
-	./scripts/build-app.sh
-
-archive: check ## 生成 Apple Silicon + Intel 通用发布包
-	./scripts/package-release.sh
+bundle: check ## 使用本机 Developer ID 签名并公证 Apple Silicon 安装包
+	./scripts/release-macos-arm64.sh
 
 clean: ## 清理构建产物
-	swift package clean
-	rm -rf build
+	cargo clean --manifest-path src-tauri/Cargo.toml
+	rm -rf dist
 
-release: check ## 创建并推送版本标签，例如 make release VERSION=0.2.0
-	@test -n "$(VERSION)" || (echo "请提供 VERSION，例如 make release VERSION=0.2.0" && exit 1)
-	@test "$$(tr -d '[:space:]' < VERSION)" = "$(VERSION)" || (echo "VERSION 必须与 VERSION 文件一致" && exit 1)
-	git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
-	git push origin "v$(VERSION)"
+release: check ## 本地签名并公证；GitHub Release 需手动上传
+	@test -n "$(VERSION)" || (echo "请提供 VERSION，例如 make release VERSION=0.1.0" && exit 1)
+	@test "$$(node -p "require('./package.json').version")" = "$(VERSION)" || (echo "VERSION 必须与 package.json 一致" && exit 1)
+	./scripts/release-macos-arm64.sh
