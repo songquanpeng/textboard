@@ -1,5 +1,6 @@
 node_modules
 dist
+build
 src-tauri/target
 src-tauri/gen/schemas
 .DS_Store
@@ -7,6 +8,17 @@ src-tauri/gen/schemas
 .env
 .env.*
 !.env.example
+
+# Apple signing, notarization, and release artifacts must stay local.
 *.cer
+*.certSigningRequest
+*.key
+*.pem
 *.p8
 *.p12
+*.mobileprovision
+*.provisionprofile
+*.dmg
+*.pkg
+*.app/
+*.xcarchive/
